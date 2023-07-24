@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,6 +19,10 @@ var (
 func main() {
 	r := mux.NewRouter()
 
+	selOpt := flag.String("option", "1", "the options to run selenium")
+	osOpt := flag.String("os", "windows", "operating system you are using")
+	flag.Parse()
+
 	postRouter := r.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/api/v1/miro/login", func(w http.ResponseWriter, r *http.Request) {
 		l.Println("Handling POST Login Request to Miro")
@@ -28,13 +33,23 @@ func main() {
 		email := reqLogin.Email
 		password := reqLogin.Password
 
+		var token string
+		var err error
+
 		if email == "" || password == "" {
 			http.Error(w, "error: please provide email and password", http.StatusInternalServerError)
 			l.Println("no email and password")
 			return
 		}
+		switch *selOpt {
+		case "1":
+			token, err = handler.StartSelenium(email, password, *osOpt, false)
+		case "2":
+			token, err = handler.StartSelenium(email, password, "", true)
+		default:
+			l.Fatal("Please choose valid option either 1 or 2")
+		}
 
-		token, err := handler.StartSelenium(email, password)
 		if err != nil {
 			http.Error(w, "error: unable to execute selenium", http.StatusInternalServerError)
 			l.Printf("error occured: %v", err)

@@ -3,30 +3,42 @@ package handler
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/tebeka/selenium"
 )
 
 const (
-	seleniumPath     = "webdrivers/selenium-server-standalone-3.5.3.jar"
-	chromeDriverPath = "webdrivers/chromedriver.exe"
-	port             = 4444
+	seleniumPath = "webdrivers/selenium-server-standalone-3.5.3.jar"
+	port         = 4444
 )
 
-func StartSelenium(email, password string) (string, error) {
-	// opts := []selenium.ServiceOption{
-	// 	// selenium.StartFrameBuffer(),
-	// 	selenium.ChromeDriver("webdrivers/chromedriver.exe"),
-	// 	selenium.Output(os.Stderr),
-	// }
+func StartSelenium(email, password, osOption string, isDocker bool) (string, error) {
+	if !isDocker {
+		var chromeDriverPath string
 
-	// selenium.SetDebug(false)
-	// service, err := selenium.NewSeleniumService(seleniumPath, port, opts...)
-	// if err != nil {
-	// 	log.Println("Could not start selenium service")
-	// 	return "server error", err
-	// }
-	// defer service.Stop()
+		if osOption == "windows" {
+			chromeDriverPath = "webdrivers/chromedriver.exe"
+		} else if osOption == "linux" || osOption == "mac" {
+			chromeDriverPath = "webdrivers/chromedriver"
+		} else {
+			return "invalid option", fmt.Errorf("please select valid OS: windows, linux or mac")
+		}
+
+		opts := []selenium.ServiceOption{
+			// selenium.StartFrameBuffer(),
+			selenium.ChromeDriver(chromeDriverPath),
+			selenium.Output(os.Stderr),
+		}
+
+		selenium.SetDebug(false)
+		service, err := selenium.NewSeleniumService(seleniumPath, port, opts...)
+		if err != nil {
+			log.Println("Could not start selenium service")
+			return "server error", err
+		}
+		defer service.Stop()
+	}
 
 	caps := selenium.Capabilities{"browserName": "chrome"}
 	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
